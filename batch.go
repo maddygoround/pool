@@ -1,6 +1,9 @@
 package pool
 
-import "sync"
+import (
+	"sync"
+	"fmt"
+)
 
 // Batch contains all information for a batch run of WorkUnits
 type Batch interface {
@@ -29,6 +32,12 @@ type Batch interface {
 	// eg. individual units of work may handle their own
 	// errors, logging...
 	WaitAll()
+
+	InProccess() bool
+
+	Name() string
+
+
 }
 
 // batch contains all information for a batch run of WorkUnits
@@ -40,24 +49,31 @@ type batch struct {
 	done    chan struct{}
 	closed  bool
 	wg      *sync.WaitGroup
+	name 	string
 }
 
-func newBatch(p Pool) Batch {
+func newBatch(p Pool,name string) Batch {
 	return &batch{
 		pool:    p,
 		units:   make([]WorkUnit, 0, 4), // capacity it to 4 so it doesn't grow and allocate too many times.
 		results: make(chan WorkUnit),
 		done:    make(chan struct{}),
 		wg:      new(sync.WaitGroup),
+		name : name,
 	}
 }
 
+func (b *batch) Name() string {
+	return b.name
+}
 // Queue queues the work to be run in the pool and starts processing immediately
 // and also retains a reference for Cancellation and outputting to results.
 // WARNING be sure to call QueueComplete() once all work has been Queued.
 func (b *batch) Queue(fn WorkFunc) {
 
 	b.m.Lock()
+
+	fmt.Println(b.closed);
 
 	if b.closed {
 		b.m.Unlock()
@@ -104,6 +120,22 @@ func (b *batch) Cancel() {
 	b.m.Unlock()
 }
 
+func (b *batch) InProccess() bool  {
+
+	var stillInProccess bool
+
+	for _,unit := range b.units {
+		if !unit.Complete() {
+			stillInProccess = true
+		}
+	}
+
+	if stillInProccess {
+		return true
+	}
+
+	return false
+}
 // Results returns a Work Unit result channel that will output all
 // completed units of work.
 func (b *batch) Results() <-chan WorkUnit {

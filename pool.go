@@ -25,7 +25,7 @@ type Pool interface {
 	// anything else running on the pool as well as outputting the results on a
 	// channel as they complete. NOTE: Batch is not reusable, once QueueComplete()
 	// has been called it's lifetime has been sealed to completing the Queued items.
-	Batch() Batch
+	Batch(name string) Batch
 }
 
 // WorkFunc is the function type needed by the pool for execution

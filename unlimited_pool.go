@@ -159,6 +159,6 @@ func (p *unlimitedPool) Close() {
 // as well as outputting the results on a channel as they complete.
 // NOTE: Batch is not reusable, once QueueComplete() has been called it's lifetime has been sealed
 // to completing the Queued items.
-func (p *unlimitedPool) Batch() Batch {
-	return newBatch(p)
+func (p *unlimitedPool) Batch(name string) Batch {
+	return newBatch(p,name)
 }

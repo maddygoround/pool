@@ -22,6 +22,8 @@ type WorkUnit interface {
 	// NOTE: After Checking IsCancelled(), if it returns false the
 	// Work Unit can no longer be cancelled and will use your returned values.
 	IsCancelled() bool
+
+	Complete() bool
 }
 
 var _ WorkUnit = new(workUnit)
@@ -34,11 +36,20 @@ type workUnit struct {
 	fn        WorkFunc
 	cancelled atomic.Value
 	writing   atomic.Value
+	complete bool
 }
 
 // Cancel cancels this specific unit of work, if not already committed to processing.
 func (wu *workUnit) Cancel() {
 	wu.cancelWithError(&ErrCancelled{s: errCancelled})
+}
+
+// Cancel cancels this specific unit of work, if not already committed to processing.
+func (wu *workUnit) Complete() bool {
+	if(wu.complete) {
+		return true
+	}
+	return false
 }
 
 func (wu *workUnit) cancelWithError(err error) {
@@ -56,6 +67,7 @@ func (wu *workUnit) Wait() {
 
 // Value returns the work units return value
 func (wu *workUnit) Value() interface{} {
+	wu.complete = true
 	return wu.value
 }
 
